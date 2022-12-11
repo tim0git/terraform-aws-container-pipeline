@@ -1,5 +1,5 @@
 locals {
-  container_architectures      = var.enable_multi_architecture_image_builds ? ["arm64", "amd64"] :  ["amd64"]
+  container_architectures      = var.enable_multi_architecture_image_builds ? ["amd64", "arm64"] :  ["amd64"]
   enable_manifest_creation     = var.enable_multi_architecture_image_builds ? [true] : []
   code_build_project_arns = [
     try(module.code_build_container[0].aws_codebuild_project_arn, null),
