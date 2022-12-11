@@ -58,6 +58,6 @@ data "aws_iam_policy_document" "codepipeline_policy" {
       "codebuild:BatchGetBuilds",
       "codebuild:StartBuild",
     ]
-    resources = [for v in local.code_build_project_arns : v if v != null]
+    resources = [for build_project_arn in local.code_build_project_arns : build_project_arn if build_project_arn != null]
   }
 }
