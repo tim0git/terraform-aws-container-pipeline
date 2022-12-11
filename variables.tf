@@ -52,17 +52,10 @@ variable "pipeline_artifact_access_log_storage_bucket" {
   default     = ""
 }
 
-variable "codedbuild_service_role_kms_key_alias" {
-  description = "The kms key alias for codedbuild service role"
-  type        = string
-  default     = null
-  nullable    = true
-}
-
 variable "tags" {
   description = "The tags to apply to the project"
   type        = map(string)
   default = {
-    "CodePipeline" = "true"
+    "Terraform" = "True"
   }
 }

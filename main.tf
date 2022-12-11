@@ -1,9 +1,7 @@
 locals {
-  enable_default_build_project = var.enable_container_features ? [] : [true]
-  container_architectures      = var.enable_multi_architecture_image_builds ? ["arm64", "amd64"] : var.enable_container_features ? ["amd64"] : []
+  container_architectures      = var.enable_multi_architecture_image_builds ? ["arm64", "amd64"] :  ["amd64"]
   enable_manifest_creation     = var.enable_multi_architecture_image_builds ? [true] : []
   code_build_project_arns = [
-    try(module.code_build[0].aws_codebuild_project_arn, null),
     try(module.code_build_container[0].aws_codebuild_project_arn, null),
     try(module.code_build_container[1].aws_codebuild_project_arn, null),
     try(module.code_build_manifest[0].aws_codebuild_project_arn, null),
@@ -21,22 +19,8 @@ module "codestar_connection" {
   tags = var.tags
 }
 
-module "code_build" {
-  count   = var.enable_container_features ? 0 : 1
-  source  = "tim0git/codebuild/aws"
-  version = "1.6.0"
-
-  project_name = var.project_name
-
-  environment_variables = var.build_environment_variables
-
-  codedbuild_service_role_kms_key_alias = var.codedbuild_service_role_kms_key_alias
-
-  tags = var.tags
-}
-
 module "code_build_container" {
-  count   = var.enable_container_features ? length(local.container_architectures) : 0
+  count   = length(local.container_architectures)
   source  = "tim0git/codebuild/aws"
   version = "1.6.0"
 
@@ -48,7 +32,7 @@ module "code_build_container" {
 
   container_architecture = local.container_architectures[count.index]
 
-  codedbuild_service_role_kms_key_alias = var.codedbuild_service_role_kms_key_alias
+  codedbuild_service_role_kms_key_alias = aws_kms_key.codepipeline_bucket_key.arn
 
   tags = var.tags
 }
@@ -66,11 +50,13 @@ module "code_build_manifest" {
 
   buildspec = "buildspec-manifest.yml"
 
+  codedbuild_service_role_kms_key_alias = aws_kms_key.codepipeline_bucket_key.arn
+
   tags = var.tags
 }
 
 resource "aws_codepipeline" "codepipeline" {
-  name     = "${var.project_name}-pipeline"
+  name     = "${var.project_name}-build-pipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
 
   artifact_store {
@@ -101,23 +87,6 @@ resource "aws_codepipeline" "codepipeline" {
     name = "Build"
 
     dynamic "action" {
-      for_each = local.enable_default_build_project
-      content {
-        name             = "Build"
-        category         = "Build"
-        owner            = "AWS"
-        provider         = "CodeBuild"
-        input_artifacts  = ["source_output"]
-        output_artifacts = ["build_output"]
-        version          = "1"
-
-        configuration = {
-          ProjectName = "${var.project_name}-codebuild"
-        }
-      }
-    }
-
-    dynamic "action" {
       for_each = local.container_architectures
       content {
         name             = action.value
@@ -133,7 +102,6 @@ resource "aws_codepipeline" "codepipeline" {
         }
       }
     }
-
   }
 
   dynamic "stage" {
@@ -166,6 +134,11 @@ resource "aws_kms_key" "codepipeline_bucket_key" {
   enable_key_rotation     = true
 }
 
+resource "aws_kms_alias" "codepipeline_bucket_key" {
+  target_key_id = aws_kms_key.codepipeline_bucket_key.key_id
+  name          = "alias/${var.project_name}"
+}
+
 #tfsec:ignore:aws-s3-enable-bucket-logging
 resource "aws_s3_bucket" "codepipeline_bucket" {
   bucket = lower("${var.project_name}-codepipeline-artifacts-store")
@@ -176,6 +149,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "codepipeline_buck
   bucket = aws_s3_bucket.codepipeline_bucket.bucket
 
   rule {
+    bucket_key_enabled = true
     apply_server_side_encryption_by_default {
       kms_master_key_id = aws_kms_key.codepipeline_bucket_key.arn
       sse_algorithm     = "aws:kms"
@@ -214,7 +188,7 @@ resource "aws_s3_bucket_logging" "example" {
 
 resource "aws_sns_topic" "pipeline_notifications" {
   count = var.enable_codestar_notifications ? 1 : 0
-  name  = "${var.project_name}-pipeline-sns-topic"
+  name  = "${var.project_name}-build-pipeline"
   tags  = var.tags
 }
 
@@ -222,7 +196,7 @@ resource "aws_codestarnotifications_notification_rule" "pipeline_notifications" 
   count          = var.enable_codestar_notifications ? 1 : 0
   detail_type    = "BASIC"
   event_type_ids = ["codepipeline-pipeline-pipeline-execution-started", "codepipeline-pipeline-pipeline-execution-succeeded", "codepipeline-pipeline-pipeline-execution-failed", "codepipeline-pipeline-pipeline-execution-canceled"]
-  name           = "${var.project_name}-pipeline-notification-rule"
+  name           = "${var.project_name}-build-pipeline"
   resource       = aws_codepipeline.codepipeline.arn
 
   target {
@@ -244,7 +218,7 @@ resource "aws_iam_role" "codepipeline_role" {
 }
 
 resource "aws_iam_role_policy" "codepipeline_policy" {
-  name   = "${var.project_name}-codepipeline_policy"
+  name   = "${var.project_name}-codepipeline-policy"
   role   = aws_iam_role.codepipeline_role.id
   policy = data.aws_iam_policy_document.codepipeline_policy.json
 }
