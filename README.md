@@ -160,3 +160,69 @@ phases:
       - docker manifest push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - docker manifest inspect $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
 ```
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+No requirements.
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_code_build_container"></a> [code\_build\_container](#module\_code\_build\_container) | tim0git/codebuild/aws | 1.6.0 |
+| <a name="module_code_build_manifest"></a> [code\_build\_manifest](#module\_code\_build\_manifest) | tim0git/codebuild/aws | 1.6.0 |
+| <a name="module_codestar_connection"></a> [codestar\_connection](#module\_codestar\_connection) | tim0git/codestar-connection/aws | 1.1.1 |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_codepipeline.codepipeline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codepipeline) | resource |
+| [aws_codestarnotifications_notification_rule.pipeline_notifications](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/codestarnotifications_notification_rule) | resource |
+| [aws_iam_role.codepipeline_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.codepipeline_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_kms_alias.codepipeline_bucket_key](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_alias) | resource |
+| [aws_kms_key.codepipeline_bucket_key](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key) | resource |
+| [aws_s3_bucket.codepipeline_bucket](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
+| [aws_s3_bucket_acl.codepipeline_bucket_acl](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_acl) | resource |
+| [aws_s3_bucket_logging.example](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_logging) | resource |
+| [aws_s3_bucket_public_access_block.codepipeline_bucket_public_access_block](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
+| [aws_s3_bucket_server_side_encryption_configuration.codepipeline_bucket_encryption_configuration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
+| [aws_s3_bucket_versioning.codepipeline_bucket_versioning](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_versioning) | resource |
+| [aws_sns_topic.pipeline_notifications](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
+| [aws_sns_topic_policy.pipeline_notifications](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_policy) | resource |
+| [aws_iam_policy_document.codepipeline_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.codepipeline_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.pipeline_notifications](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_branch_name"></a> [branch\_name](#input\_branch\_name) | The branch name | `string` | `"develop"` | no |
+| <a name="input_build_environment_variables"></a> [build\_environment\_variables](#input\_build\_environment\_variables) | The build environment variables | `any` | `[]` | no |
+| <a name="input_enable_codestar_notifications"></a> [enable\_codestar\_notifications](#input\_enable\_codestar\_notifications) | Enable codestar notifications and sns topic | `bool` | `false` | no |
+| <a name="input_enable_container_features"></a> [enable\_container\_features](#input\_enable\_container\_features) | If true, build project will run in privileged mode, and ecr actions required for build and deploy will be added to build project iam role | `bool` | `true` | no |
+| <a name="input_enable_multi_architecture_image_builds"></a> [enable\_multi\_architecture\_image\_builds](#input\_enable\_multi\_architecture\_image\_builds) | If true, two build projects will be created, one for amd64 and one for arm64. In addition a manifest stage will be created to create publish the manifest to ecr | `bool` | `false` | no |
+| <a name="input_full_repository_id"></a> [full\_repository\_id](#input\_full\_repository\_id) | The full repository id | `string` | `""` | no |
+| <a name="input_pipeline_artifact_access_log_storage_bucket"></a> [pipeline\_artifact\_access\_log\_storage\_bucket](#input\_pipeline\_artifact\_access\_log\_storage\_bucket) | The log bucket id where you want to store the pipeline artifact access logs, if no id is passed, logging will be disabled | `string` | `""` | no |
+| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | The name of the project | `string` | `"codepipeline"` | no |
+| <a name="input_provider_type"></a> [provider\_type](#input\_provider\_type) | The provider type | `string` | `"GitHub"` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | The tags to apply to the project | `map(string)` | <pre>{<br>  "Terraform": "True"<br>}</pre> | no |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_aws_codepipeline_name"></a> [aws\_codepipeline\_name](#output\_aws\_codepipeline\_name) | n/a |
+| <a name="output_aws_codepipeline_role_arn"></a> [aws\_codepipeline\_role\_arn](#output\_aws\_codepipeline\_role\_arn) | n/a |
+| <a name="output_aws_codepipeline_role_policy_arn"></a> [aws\_codepipeline\_role\_policy\_arn](#output\_aws\_codepipeline\_role\_policy\_arn) | n/a |
+| <a name="output_codepipeline_bucket_name"></a> [codepipeline\_bucket\_name](#output\_codepipeline\_bucket\_name) | n/a |
+<!-- END_TF_DOCS -->
